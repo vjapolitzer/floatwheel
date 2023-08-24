@@ -49,7 +49,7 @@ typedef enum
 #define   DETECTION_SWITCH_TIME     500         // Detection switch time unit ms
 #define   CHARGER_DETECTION_DELAY	1000        // Charger detection delay unit ms
 #define   BOOT_ANIMATION		    RAINBOW     // Boot animation (NORMAL, RAINBOW)
-#define   CELL_TYPE                 P42A        // Cell configuration to use for voltage display (P42A, DG40)
+#define   CELL_TYPE                 DG40        // Cell configuration to use for voltage display (P42A, DG40)
 #define	  BUZZER_TYPE				LCM			// Change control of buzzer (LCM, VESC, OFF) - TODO implement the different options in code
 #define	  ENABLE_POWER_WHILE_CHARGE	true		// Enable power while charging
 
