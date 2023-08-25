@@ -28,21 +28,21 @@ typedef enum
 
 #define	  CHARGING_VOLTAGE	  		40   		// Charging voltage detection. Greater than this value is considered that the charger is plugged in
 #define   BATTERY_STRING      		20    		// Number of battery cells
-#define   SHUTDOWN_TIME		  		30   		// Shutdown time (minutes)
+#define   SHUTDOWN_TIME		  		10   		// Shutdown time (minutes)
 #define   VESC_RPM            		250  		// RPM
 #define   VESC_BOOT_TIME      		6000 		// VESC boot time (ms)
 #define   DUTY_CYCLE          		0.7  		// When duty cycle greater than this value (%), beep beep beep (sic)
 #define   VOLTAGE_RECEIPT     		0.02 		// Voltage receipt unit V
 #define   ADC_THRESHOLD_LOWER       2.5         // Threshold value for footpad activation detection
-#define   ADC_THRESHOLD_UPPER       2.9         // Threshold value for footpad activation detection
+#define   ADC_THRESHOLD_UPPER       2.9   	    // Threshold value for footpad activation detection
 /*******************************************************************************/
 #define   VESC_RPM_WIDTH      		-200 		// When the rotation speed is between ±100, do not switch the front and rear lights, keep the front white light and the rear red light
-#define   LIGHTBAR_BRIGHTNESS_1 	140			// High brightness value (0-255)
-#define   LIGHTBAR_BRIGHTNESS_2 	70			// Medium brightness value (0-255)
-#define   LIGHTBAR_BRIGHTNESS_3 	10			// Low brightness value (0-255)
-#define   MAIN_BRIGHTNESS_1			7000		// Low brightness value (0-9999)
-#define   MAIN_BRIGHTNESS_2			4000		// Medium brightness value (0-9999)
-#define   MAIN_BRIGHTNESS_3			0			// High brightness value (0-9999)
+#define   LIGHTBAR_BRIGHTNESS_1 	140			// High brightness value (0-255) Stock (204)
+#define   LIGHTBAR_BRIGHTNESS_2 	70			// Medium brightness value (0-255) Stock (128)
+#define   LIGHTBAR_BRIGHTNESS_3 	10			// Low brightness value (0-255) Stock (30)
+#define   MAIN_BRIGHTNESS_1			7000		// Low brightness value (0-9999) Stock (7000)
+#define   MAIN_BRIGHTNESS_2			4000		// Medium brightness value (0-9999) Stock (4000)
+#define   MAIN_BRIGHTNESS_3			0			// High brightness value (0-9999) Stock (0000)
 #define   CHARGE_CURRENT			0.3         // Charging current unit A
 #define   CHARGE_CURRENT_L			0.1         // Charging current unit A
 #define   CHARGE_CURRENT_H			0.24        // Charging current unit A
