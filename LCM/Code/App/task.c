@@ -721,7 +721,7 @@ void Flashlight_Bright(uint8_t red_white,uint8_t bright)
 				brightness = 9999-brightness+1;
 				TIM_SetCompare2(TIM1,brightness);
 			}
-			if(Flashlight_Time >= 2000)
+			if(Flashlight_Time >= 500)
 			{
 				TIM_SetCompare2(TIM1,9000);
 				flashlight_bright_step = 5;
@@ -756,7 +756,7 @@ void Flashlight_Bright(uint8_t red_white,uint8_t bright)
 				
 				TIM_SetCompare2(TIM1,brightness);
 			}
-			if(Flashlight_Time >= 2000)
+			if(Flashlight_Time >= 500)
 			{	
 				Set_Light_Brightness(); // <-- might not be necessary if Change_Light_Profile gets called when button state changes
 				TIM_SetCompare2(TIM1,Main_Brightness);
