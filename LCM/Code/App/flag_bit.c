@@ -6,6 +6,7 @@
 	Power_Flag = 1; VESC booting up.
 	Power_Flag = 2; VESC boot-up completed.
 	Power_Flag = 3; The board is powered by the charger.
+	Power_Flag = 4; Power off Signal
 */
 uint8_t Power_Flag = 0;
 /*
@@ -34,7 +35,8 @@ uint8_t Flashlight_Flag = 0;
 /*
 	Brightness_Flag = 0; Default state.
 	Brightness_Flag = 1; Starting brightness adjustment.
-	Brightness_Flag = 2; Brightness adjustment completed.
+	Brightness_Flag = 2; Running brightness adjustment.
+	Brightness_Flag = 3; Brightness adjustment completed.
 */
 uint8_t Brightness_Flag = 0;
 /*

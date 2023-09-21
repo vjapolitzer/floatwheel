@@ -2,7 +2,6 @@
 #include "eeprom.h"
 #include <math.h>
 
-
 ///Colors
 //These are warnings displayed on the lightbar -> use full brightness
 uint8_t purple[3] = {0x80, 0x00, 0x80};		//Tiltback - high, low, duty
@@ -47,12 +46,10 @@ void Change_Boot_Animation(uint8_t animation,bool get) {
 /**************************************************
  * @brie   :KEY1_Task()
  * @note   :KEY1����
- * @param  :��
- * @retval :��
  **************************************************/
 void KEY1_Task(void)
 {
-	if(KEY1_State == 0 || (!ENABLE_POWER_WHILE_CHARGE && Power_Flag == 3))  // Charger power button does nothing
+	if(KEY1_State == 0)
 	{
 		return;
 	}
@@ -67,20 +64,20 @@ void KEY1_Task(void)
 			break;
 
 		case 2: // Double Click
-			if(Power_Flag == 2)
+			if (Power_Flag == 2 || Power_Flag == 3)
 			{
 				Change_Light_Profile(true);
 			}
 			break;
 
 		case 3: // Press
-			Power_Flag = 3;
-			Flashlight_Flag = 0;
-			Lightbar_Mode_Flag = 0;
+			Power_Flag = 4;
+			// Flashlight_Flag = 0;
+			// Lightbar_Mode_Flag = 0;
 			break;
 
 		case 4: // Tripple Press
-			if(Power_Flag == 2)
+			if (Power_Flag == 2 || Power_Flag == 3)
 			{
 				if(Buzzer_Flag == 2)
 				{
@@ -477,41 +474,43 @@ void Set_Light_Brightness()
 }
 
 /**
- * @param start starting brightness
- * @param end ending brightness
+ * @note transitions from current brightness to end brightness
+ * @param target ending brightness
  * @param time transition time in ms
  */
-void Light_Transition(uint16_t start, uint16_t end, uint16_t time)
+void Light_Transition(uint16_t target, uint16_t time)
 {
-	Brightness_Flag = 1;
-	Flashlight_Time = 0;
-	uint16_t brightness = 0;
+	static uint16_t brightness = 9999;
 	uint16_t diff = 0;
 	int mod = 1;
-	TIM_SetCompare2(TIM1, start);
-
-	if (start > end)
+	if (Brightness_Flag == 1) // if target has changed restart timer
 	{
-		diff = start - end;
+		Brightness_Flag = 2;
+		Flashlight_Time = 0;
+	}
+	if (brightness > target)
+	{
+		diff = brightness - target;
 		mod = -1;
 	}
-	else
-	{
-		diff = end - start;
+	else {
+		diff = target - brightness;
 	}
-	while (Brightness_Flag == 1)
+	if (Flashlight_Time >= time)
 	{
-		if (Flashlight_Time >= time)
-		{
-			TIM_SetCompare2(TIM1, end);
-			Brightness_Flag = 2;
-			break;
-		}
-		if (Flashlight_Time % 2 == 0)
-		{
-			brightness = start + (round((Flashlight_Time * diff) / time) * mod);
-			TIM_SetCompare2(TIM1, brightness);
-		}
+		TIM_SetCompare2(TIM1, target);
+		Brightness_Flag = 3;
+		return;
+	}
+	if (Flashlight_Time % FADE_REFRESH == 0)
+	{
+		brightness = brightness + (round((Flashlight_Time * diff) / time) * mod);
+		TIM_SetCompare2(TIM1, brightness);
+		time -= FADE_REFRESH;
+	}
+	if (Brightness_Flag == 2)
+	{
+		Light_Transition(target, time);
 	}
 }
 
@@ -519,20 +518,15 @@ void Light_Transition(uint16_t start, uint16_t end, uint16_t time)
  * @brie   : Flashlight_Bright()
  * @note   : Flashlight brightness control
  * @param direction 1=Forward 2=Reverse  
- * @param bright 1=transition from 0% to 10% 2=transition from 10% to 100%
+ * @param bright 1=transition to REST 2=transition from 10% to 100%
  **************************************************/
 void Flashlight_Bright(uint8_t direction,uint8_t bright)
 {
-	// static uint8_t flashlight_bright_step = 0;
-	// uint16_t brightness = 0;
-	// uint8_t flashlight_flag_last_2 = 0;
-
-	// if(flashlight_flag_last_2 != Flashlight_Flag)
-	// {
-	//  flashlight_bright_step = 0;
-	// 	flashlight_flag_last_2 = Flashlight_Flag;
-	// }
-
+	static uint8_t direction_last = 0;
+	if (Brightness_Flag == 2)
+	{ 
+		Brightness_Flag = 3;
+	}
 	if (direction == 1) // Direction forward
 	{
 		LED_F_OFF;
@@ -544,118 +538,19 @@ void Flashlight_Bright(uint8_t direction,uint8_t bright)
 		LED_F_ON;
 	}
 
-	if(Flashlight_Flag == 4) //Set brightness to 10%
-	{
-		TIM_SetCompare2(TIM1,9000);//Brightness set to 10%
-		return;
-	}
-
 	if (bright == 1)
 	{
-		Light_Transition(9999, 9000, FADE_TIME);
+		if (Main_Brightness > MAIN_BRIGHTNESS_REST) {  // If your light profile is less than rest use that
+			Light_Transition(Main_Brightness, FADE_TIME);
+		} 
+		else {
+			Light_Transition(MAIN_BRIGHTNESS_REST, FADE_TIME);
+		}
 	}
 	else
 	{
-		Light_Transition(9000, Main_Brightness, FADE_TIME);
+		Light_Transition(Main_Brightness, FADE_TIME);
 	}
-
-	// switch(flashlight_bright_step) //obsoleted by Light_Transition()
-	// {
-	// case 0:  // direction check
-	// 	if(direction == 1) //Direction forward
-	// 		{
-	// 			LED_F_OFF;
-	// 			LED_B_ON;
-	// 		}
-	// 	else			//Direction backward
-	// 		{
-	// 			LED_B_OFF;
-	// 			LED_F_ON;
-	// 		}
-	// 	flashlight_bright_step = 1;
-	// break;
-	// case 1:
-	// 	Flashlight_Time = 0;
-	// 	flashlight_bright_step = 2;
-	// break;
-	// case 2:
-	// 	if(bright == 1)
-	// 	{
-	// 		TIM_SetCompare2(TIM1,9999); //��0%��ʼ
-	// 		flashlight_bright_step = 3;
-	// 	}
-	// 	else
-	// 	{
-	// 		TIM_SetCompare2(TIM1,9000);//��10%��ʼ
-	// 		flashlight_bright_step = 4;
-	// 	}
-	// break;
-	// case 3://Transition 0% -> 10%
-	// 	if(Flashlight_Time%2 == 0)
-	// 	{
-	// 		brightness = Flashlight_Time/2;
-	// 		brightness = 9999-brightness+1;
-	// 		TIM_SetCompare2(TIM1,brightness);
-	// 	}
-	// 	if(Flashlight_Time >= 2000)
-	// 	{
-	// 		TIM_SetCompare2(TIM1,9000);
-	// 		flashlight_bright_step = 5;
-	// 	}
-	// break;
-	// case 4://Transition 10% -> 100% -> direction switch
-	// 	if(Flashlight_Time%2 == 0)
-	// 	{
-	// 		switch(Light_Profile)
-	// 		{
-	// 			case 1:
-	// 				brightness = (Flashlight_Time*1)+1000;
-	// 				brightness = 9999-brightness+1;
-	// 			break;
-	// 			case 2:
-	// 				brightness = ((Flashlight_Time*2.5)+1000);
-	// 				brightness = 9999-brightness+1;
-	// 			break;
-	// 			case 3:
-	// 				brightness = (Flashlight_Time*4.5)+1000;
-	// 				brightness = 9999-brightness+1;
-	// 			break;
-	// 			default:
-	// 			break;
-	// 		}
-	// 		TIM_SetCompare2(TIM1,brightness);
-	// 	}
-	// 	if(Flashlight_Time >= 2000)
-	// 	{
-	// 		Set_Light_Brightness(); // <-- might not be necessary if Change_Light_Profile gets called when button state changes
-	// 		TIM_SetCompare2(TIM1,Main_Brightness);
-	// 		/*switch(Light_Profile)
-	// 		//Should be redundant after the new switch statement implemented in the Change_Light_Profile code
-	// 		switch(Light_Profile)
-	// 		{
-	// 			case 1:
-	// 				TIM_SetCompare2(TIM1,7000);
-	// 			break;
-	// 			case 2:
-	// 				TIM_SetCompare2(TIM1,4000);
-	// 			break;
-	// 			case 3:
-	// 				TIM_SetCompare2(TIM1,0);
-	// 			break;
-	// 			default:
-	// 			break;
-	// 		}*/
-	// 		flashlight_bright_step = 5;
-	// 	}
-	// 	break;
-	// case 5://���ȵ�����
-	// 	Brightness_Flag = 2;
-	// 	flashlight_bright_step = 0;
-	// 	break;
-	// default:
-	// break;
-	// }
-
 }
 
 
@@ -664,14 +559,14 @@ void Flashlight_Bright(uint8_t direction,uint8_t bright)
  **************************************************/
 void Flashlight_Task(void)
 {
-static uint8_t flashlight_flag_last = 0;
+	static uint8_t flashlight_flag_last = 0;
 
 	if(Power_Flag != 2) //When just booting or vesc is off turn lights off
 	{
 		LED_B_OFF;
 		LED_F_OFF;
 		Flashlight_Flag = 0;
-		TIM_SetCompare2(TIM1,0);
+		TIM_SetCompare2(TIM1,9999);
 		return;
 	}
 
@@ -682,7 +577,7 @@ static uint8_t flashlight_flag_last = 0;
 	else if(flashlight_flag_last != Flashlight_Flag)
 	{
 		flashlight_flag_last = Flashlight_Flag;
-		Brightness_Flag = 2; // Breaks out of current transition to prepare for the next
+		Brightness_Flag = 3; // Breaks out of current transition to prepare for the next
 
 	}
 	switch(Flashlight_Flag)
@@ -811,10 +706,18 @@ void Power_Task(void)
 
 		break;
 
-	case 3: // VESC�ػ�������������ӹ���
+	case 2: // Booted UP
+		break;
+
+	case 3: // Powered by charger
+		if (ENABLE_POWER_WHILE_CHARGE != true)
+		{
+			PWR_OFF;
+		}
+		break;
+
+	case 4: // Signal to power board off
 		PWR_OFF;
-		// LED1_Filp_Time(1000);
-		// Charge_Flag = 1; //׼�����
 		break;
 
 	default:
@@ -1184,21 +1087,28 @@ void ADC_Task(void)
  **************************************************/
 void Apply_BatteryPowerFlag(float battery_voltage)
 {
-	float battVoltages[10];
+	float battVoltages[10] = {4.054, 4.01, 3.908, 3.827, 3.74, 3.651, 3.571, 3.485, 3.38, 3.0}; //P42A
 	float p42aBattVoltages[10] = {4.054, 4.01, 3.908, 3.827, 3.74, 3.651, 3.571, 3.485, 3.38, 3.0};
 	float dg40BattVoltages[10] = {4.07, 4.025, 3.91, 3.834, 3.746, 3.607, 3.49, 3.351, 3.168, 2.81};
+	static uint8_t cell_type_last = 0; //CELL_TYPE P42A equates out to 0
 
-	switch (CELL_TYPE)
+	if (CELL_TYPE != cell_type_last) // Only run once or on change
 	{
-	case P42A:
-		memcpy(battVoltages, p42aBattVoltages, sizeof(p42aBattVoltages));
-		break;
-	case DG40:
-		memcpy(battVoltages, dg40BattVoltages, sizeof(dg40BattVoltages));
-		break;
-	default:
-		memcpy(battVoltages, p42aBattVoltages, sizeof(p42aBattVoltages));
-		break;
+		switch (CELL_TYPE)
+		{
+		case P42A:
+			memcpy(battVoltages, p42aBattVoltages, sizeof(p42aBattVoltages));
+			cell_type_last = 0;
+			break;
+		case DG40:
+			memcpy(battVoltages, dg40BattVoltages, sizeof(dg40BattVoltages));
+			cell_type_last = 1;
+			break;
+		default: // Just in case
+			memcpy(battVoltages, p42aBattVoltages, sizeof(p42aBattVoltages));
+			cell_type_last = 0;
+			break;
+		}
 	}
 
 	for (int i=0;i<10;i++) {
@@ -1352,7 +1262,7 @@ void Conditional_Judgment(void)
 				Shutdown_Time_M++;
 				if(Shutdown_Time_M >= SHUTDOWN_TIME)
 				{
-					Power_Flag = 3;
+					Power_Flag = 4;
 				}
 			}
 		}
@@ -1361,7 +1271,7 @@ void Conditional_Judgment(void)
 	case 3: // VESC shutdown and charger supplying power to board
 		if(V_I == 0 && Charge_Time > 150)
 		{
-			if(Charge_Current < CHARGE_CURRENT && Charge_Current > 0)
+			if(Charge_Current < CHARGE_CURRENT && Charge_Current > 0) //if the charger current is between 0 & 0.3A
 			//if(Charge_Current > CHARGE_CURRENT_L && Charge_Current < CHARGE_CURRENT_H)
 			{
 				Shutdown_Cnt++;
@@ -1379,16 +1289,20 @@ void Conditional_Judgment(void)
 		}
 			else if(Charge_Time > 150)
 		{
-			battery_voltage = (Charge_Voltage + 1) / BATTERY_STRING; // Divides pack voltage by cells -- +1 is the correction factor
+			battery_voltage = (Charge_Voltage + 1) / BATTERY_STRING; // Divides pack voltage by cells -- +1 is a correction factor - Tony
 			if(Charge_Flag == 2)
 			{
-				if((battery_voltage > (battery_voltage_last+VOLTAGE_RECEIPT)) || (battery_voltage < (battery_voltage_last - VOLTAGE_RECEIPT))) {
+				if((battery_voltage > (battery_voltage_last+VOLTAGE_RECEIPT)) || (battery_voltage < (battery_voltage_last - VOLTAGE_RECEIPT))) // if average cell voltage has changed by more than .02v
+				{
 					Apply_BatteryPowerFlag(battery_voltage);
 					battery_voltage_last = battery_voltage;
 				}
 			}
 		}
 
+		break;
+
+	case 4:
 		break;
 
 	default:
